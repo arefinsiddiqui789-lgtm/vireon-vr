@@ -16,10 +16,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 
+const LOGIN_EVENT = "vireon:login-success";
+
+export function signalJustLoggedIn() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(LOGIN_EVENT));
+  }
+}
+
 export default function Home() {
   const { activeSection } = useVireonStore();
   const { data: session, status } = useSession();
-  const [appReady, setAppReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
 
   const sectionComponents: Record<string, React.ReactNode> = {
     dashboard: <DashboardSection />,
@@ -31,16 +40,26 @@ export default function Home() {
     overview: <OverviewSection />,
   };
 
-  // When session becomes authenticated, allow the app to fade in
+  // Listen for login success event (from auth-page)
   useEffect(() => {
-    if (status === "authenticated" && session) {
-      const timer = setTimeout(() => setAppReady(true), 100);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [status, session]);
+    const handleLogin = () => {
+      setSplashDone(false);
+      setShowSplash(true);
+    };
+    window.addEventListener(LOGIN_EVENT, handleLogin);
+    return () => window.removeEventListener(LOGIN_EVENT, handleLogin);
+  }, []);
 
-  // Show loading while checking auth
+  // Splash auto-advance to app after animation
+  useEffect(() => {
+    if (!showSplash || splashDone) return;
+    const timer = setTimeout(() => {
+      setSplashDone(true);
+    }, 2600);
+    return () => clearTimeout(timer);
+  }, [showSplash, splashDone]);
+
+  // ===== Loading =====
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -68,16 +87,111 @@ export default function Home() {
     );
   }
 
-  // Not authenticated — show auth page
+  // ===== Not authenticated =====
   if (status === "unauthenticated" || !session) {
     return <AuthPage />;
   }
 
-  // Authenticated — show main app with fade-in
+  // ===== Splash (post-login animation) =====
+  if (showSplash && !splashDone) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background"
+      >
+        {/* Ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-primary/[0.07] blur-[100px] pointer-events-none" />
+
+        {/* Logo animation */}
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mb-6"
+        >
+          {/* Outer ring pulse */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1.4, opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
+            className="absolute inset-0 rounded-3xl border-2 border-primary/30"
+          />
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{ duration: 1.8, ease: "easeOut", delay: 0.5 }}
+            className="absolute inset-0 rounded-3xl border border-primary/15"
+          />
+
+          {/* Logo container */}
+          <div className="w-20 h-20 rounded-3xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 shadow-2xl shadow-primary/40">
+            <Image
+              src="/logo.png"
+              alt="Vireon Logo"
+              width={48}
+              height={48}
+              className="object-contain"
+            />
+          </div>
+        </motion.div>
+
+        {/* Brand name */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-center"
+        >
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
+            Vireon
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Productivity Hub
+          </p>
+        </motion.div>
+
+        {/* Welcome message */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="text-muted-foreground/60 text-sm mt-6"
+        >
+          Preparing your workspace...
+        </motion.p>
+
+        {/* Loading dots */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 1 }}
+          className="flex items-center gap-1.5 mt-4"
+        >
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-2 h-2 rounded-full bg-primary"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{
+                duration: 1.2,
+                repeat: Infinity,
+                delay: i * 0.2,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  // ===== Main App =====
   return (
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: appReady ? 1 : 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="min-h-screen flex flex-col bg-background"
     >
