@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===== AUTH MODELS =====
-
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -18,7 +16,6 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
   accounts      Account[]
   sessions      Session[]
 }
@@ -36,8 +33,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -47,8 +43,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -58,8 +53,6 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
-
-// ===== APP MODELS =====
 
 model StudyTask {
   id          String   @id @default(cuid())
@@ -73,12 +66,12 @@ model StudyTask {
 }
 
 model DailyGoal {
-  id          String   @id @default(cuid())
-  title       String
-  completed   Boolean  @default(false)
-  date        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  date      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model GoalStreak {
@@ -89,36 +82,36 @@ model GoalStreak {
 }
 
 model GymExercise {
-  id          String   @id @default(cuid())
-  name        String
-  sets        Int      @default(3)
-  reps        Int      @default(10)
-  completed   Boolean  @default(false)
-  dayOfWeek   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  sets      Int      @default(3)
+  reps      Int      @default(10)
+  completed Boolean  @default(false)
+  dayOfWeek Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model GymLog {
-  id          String   @id @default(cuid())
-  date        String
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  date      String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CodeSnippet {
-  id          String   @id @default(cuid())
-  title       String
-  language    String   @default("python")
-  code        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  title     String
+  language  String   @default("python")
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ChatMessage {
-  id          String   @id @default(cuid())
-  role        String
-  content     String
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  role      String
+  content   String
+  createdAt DateTime @default(now())
 }
