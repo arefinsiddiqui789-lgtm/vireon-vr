@@ -40,6 +40,23 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface FitnessProfile {
+  name: string;
+  age: number;
+  gender: "male" | "female";
+  weight: number; // kg
+  height: number; // cm
+  activityLevel: "sedentary" | "light" | "moderate" | "active" | "very_active";
+  goal: "lose" | "gain";
+  // Calculated fields
+  bmr: number;
+  tdee: number;
+  dailyCalories: number;
+  proteinG: number;
+  carbG: number;
+  fatG: number;
+}
+
 export type ActiveSection =
   | "dashboard"
   | "study"
@@ -151,6 +168,11 @@ interface VireonState {
   chatHistory: ChatMessage[];
   addChatMessage: (role: "user" | "assistant", content: string) => void;
   clearChatHistory: () => void;
+
+  // Fitness Profile
+  fitnessProfile: FitnessProfile | null;
+  saveFitnessProfile: (profile: Omit<FitnessProfile, "bmr" | "tdee" | "dailyCalories" | "proteinG" | "carbG" | "fatG">) => void;
+  clearFitnessProfile: () => void;
 
   // Motivation
   currentQuote: { text: string; author: string };
@@ -275,6 +297,56 @@ export const useVireonStore = create<VireonState>()(
         })),
       clearChatHistory: () => set({ chatHistory: [] }),
 
+      // Fitness Profile
+      fitnessProfile: null,
+      saveFitnessProfile: (profile) => {
+        // Mifflin-St Jeor BMR
+        let bmr: number;
+        if (profile.gender === "male") {
+          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age + 5;
+        } else {
+          bmr = 10 * profile.weight + 6.25 * profile.height - 5 * profile.age - 161;
+        }
+
+        // Activity multipliers
+        const activityMultipliers: Record<string, number> = {
+          sedentary: 1.2,
+          light: 1.375,
+          moderate: 1.55,
+          active: 1.725,
+          very_active: 1.9,
+        };
+        const tdee = Math.round(bmr * (activityMultipliers[profile.activityLevel] || 1.2));
+
+        // Calorie target: -500 for loss, +500 for gain
+        const dailyCalories =
+          profile.goal === "lose" ? tdee - 500 : tdee + 500;
+
+        // Macro split
+        // Lose: 40% protein, 30% carbs, 30% fat
+        // Gain: 30% protein, 45% carbs, 25% fat
+        const proteinPct = profile.goal === "lose" ? 0.4 : 0.3;
+        const carbPct = profile.goal === "lose" ? 0.3 : 0.45;
+        const fatPct = profile.goal === "lose" ? 0.3 : 0.25;
+
+        const proteinG = Math.round((dailyCalories * proteinPct) / 4); // 4 cal/g
+        const carbG = Math.round((dailyCalories * carbPct) / 4);       // 4 cal/g
+        const fatG = Math.round((dailyCalories * fatPct) / 9);         // 9 cal/g
+
+        set({
+          fitnessProfile: {
+            ...profile,
+            bmr: Math.round(bmr),
+            tdee,
+            dailyCalories,
+            proteinG,
+            carbG,
+            fatG,
+          },
+        });
+      },
+      clearFitnessProfile: () => set({ fitnessProfile: null }),
+
       // Motivation
       currentQuote: MOTIVATIONAL_QUOTES.morning[0],
       refreshQuote: () => {
@@ -296,6 +368,7 @@ export const useVireonStore = create<VireonState>()(
         codeSnippets: state.codeSnippets,
         chatHistory: state.chatHistory,
         activeSection: state.activeSection,
+        fitnessProfile: state.fitnessProfile,
       }),
     }
   )
