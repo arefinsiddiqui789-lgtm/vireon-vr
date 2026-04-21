@@ -15,12 +15,12 @@ export async function POST(req: NextRequest) {
     let zai;
     try {
       zai = await ZAI.create();
-    } catch (e) {
-      console.error("ZAI Initialization Error:", e);
-      return NextResponse.json(
-        { error: "AI Service initialization failed. Check your API keys." },
-        { status: 500 }
-      );
+    } catch (e: any) {
+      console.warn("ZAI Initialization failed, using Mock Response:", e.message);
+      // Fallback Mock Response
+      return NextResponse.json({ 
+        response: "Yo! It's Vireon Bro. I'm currently in 'offline mode' because my AI core is waiting for an API key. But normally, I'd stay here and help you crush your CSE goals! Once you add the key, I'll be fully powered up. 🚀" 
+      });
     }
 
     // Build conversation messages
