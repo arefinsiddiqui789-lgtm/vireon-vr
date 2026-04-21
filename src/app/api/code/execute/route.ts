@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
-
 export async function POST(req: NextRequest) {
   try {
     const { code, language } = await req.json();
@@ -24,6 +20,10 @@ export async function POST(req: NextRequest) {
 
     const langName = langNames[language] || language;
     const startTime = Date.now();
+
+    // Initialize OpenAI inside the request
+    const apiKey = process.env.OPENAI_API_KEY;
+    const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
     // --- TRY OPENAI FIRST ---
     if (openai) {
@@ -52,8 +52,8 @@ export async function POST(req: NextRequest) {
           exitCode: hasError ? 1 : 0,
           executionTime,
         });
-      } catch (e) {
-        console.error("OpenAI Execution Error:", e);
+      } catch (e: any) {
+        console.error("OpenAI Execution Error:", e.message);
       }
     }
 

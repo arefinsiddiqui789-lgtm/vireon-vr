@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-// Initialize OpenAI client only if key is available
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
-
 export async function POST(req: NextRequest) {
   try {
     const { message, history } = await req.json();
@@ -16,6 +11,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Initialize OpenAI inside the request to ensure fresh env variables
+    const apiKey = process.env.OPENAI_API_KEY;
+    const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
     // --- TRY OPENAI FIRST ---
     if (openai) {
@@ -33,15 +32,16 @@ export async function POST(req: NextRequest) {
           }));
 
         const completion = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo", // Using gpt-4o-mini standard for portfolio apps
+          model: "gpt-3.5-turbo",
           messages: [systemMessage, ...conversationHistory, { role: "user", content: message }],
         });
 
         const response = completion.choices[0]?.message?.content;
-        return NextResponse.json({ response });
+        if (response) {
+          return NextResponse.json({ response });
+        }
       } catch (e: any) {
-        console.error("OpenAI Error:", e.message);
-        // Fall through to ZAI or Mock
+        console.error("OpenAI Execution Error:", e.message);
       }
     }
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       const zai = await ZAI.create();
       
       const messages = [
-        { role: "assistant" as const, content: "You are Vireon Bro..." }, // Simplified for SDK
+        { role: "assistant" as const, content: "You are Vireon Bro..." },
         ...(history || []).slice(-10),
         { role: "user" as const, content: message },
       ];
