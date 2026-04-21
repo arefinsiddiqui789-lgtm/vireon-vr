@@ -14,13 +14,12 @@ import {
   Menu,
   X,
   CalendarDays,
-  Clock,
   LogOut,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSyncExternalStore, useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import Image from "next/image";
 
 interface NavItem {
@@ -40,85 +39,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: "overview", label: "Overview", icon: <CalendarDays size={17} />, color: "bg-cyan-500/15 text-cyan-400 dark:text-cyan-400" },
 ];
 
-const BD_MONTHS_EN = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
-const BD_DAYS_EN = [
-  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
-];
-
-const BD_MONTHS_BN = [
-  "বৈশাখ", "জ্যৈষ্ঠ", "আষাঢ়", "শ্রাবণ", "ভাদ্র", "আশ্বিন",
-  "কার্তিক", "অগ্রহায়ণ", "পৌষ", "মাঘ", "ফাল্গুন", "চৈত্র",
-];
-
-const BD_SEASONS = [
-  "গ্রীষ্ম", "বর্ষা", "শরৎ", "হেমন্ত", "শীত", "বসন্ত",
-];
-
-// Bengali date approximation
-function getSimpleBengaliDate(date: Date) {
-  const gDay = date.getDate();
-  const gMonth = date.getMonth(); // 0-indexed
-
-  // Mapping: Bengali month starts approximately on these Gregorian dates
-  // Boishakh: Apr 14, Joishtha: May 15, Ashar: Jun 15, Shravan: Jul 16
-  // Bhadro: Aug 16, Ashwin: Sep 17, Kartik: Oct 17, Agrahayan: Nov 16
-  // Poush: Dec 16, Magh: Jan 15, Falgun: Feb 13, Chaitra: Mar 15
-
-  const starts = [
-    { gMonth: 0, gDay: 15, bnMonth: 9, name: "মাঘ", daysFromStart: 0 },      // Jan 15 → Magh
-    { gMonth: 1, gDay: 13, bnMonth: 10, name: "ফাল্গুন", daysFromStart: 0 },  // Feb 13 → Falgun
-    { gMonth: 2, gDay: 15, bnMonth: 11, name: "চৈত্র", daysFromStart: 0 },    // Mar 15 → Chaitra
-    { gMonth: 3, gDay: 14, bnMonth: 0, name: "বৈশাখ", daysFromStart: 0 },     // Apr 14 → Boishakh
-    { gMonth: 4, gDay: 15, bnMonth: 1, name: "জ্যৈষ্ঠ", daysFromStart: 0 },   // May 15 → Joishtha
-    { gMonth: 5, gDay: 15, bnMonth: 2, name: "আষাঢ়", daysFromStart: 0 },     // Jun 15 → Ashar
-    { gMonth: 6, gDay: 16, bnMonth: 3, name: "শ্রাবণ", daysFromStart: 0 },    // Jul 16 → Shravan
-    { gMonth: 7, gDay: 16, bnMonth: 4, name: "ভাদ্র", daysFromStart: 0 },     // Aug 16 → Bhadro
-    { gMonth: 8, gDay: 17, bnMonth: 5, name: "আশ্বিন", daysFromStart: 0 },    // Sep 17 → Ashwin
-    { gMonth: 9, gDay: 17, bnMonth: 6, name: "কার্তিক", daysFromStart: 0 },   // Oct 17 → Kartik
-    { gMonth: 10, gDay: 16, bnMonth: 7, name: "অগ্রহায়ণ", daysFromStart: 0 }, // Nov 16 → Agrahayan
-    { gMonth: 11, gDay: 16, bnMonth: 8, name: "পৌষ", daysFromStart: 0 },      // Dec 16 → Poush
-  ];
-
-  const bnYear = gMonth >= 3
-    ? date.getFullYear() - 593
-    : date.getFullYear() - 594;
-
-  // Find current Bengali month
-  const currentStart = starts[gMonth];
-  const bnDay = gDay - currentStart.gDay + 1;
-  const bnMonthName = currentStart.name;
-  const season = BD_SEASONS[Math.floor(currentStart.bnMonth / 2)];
-
-  return { bnDay: Math.max(1, bnDay), bnMonthName, bnYear, season };
-}
-
-// Convert number to Bengali digits
-function toBengaliDigits(num: number): string {
-  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return num.toString().split('').map(d => bengaliDigits[parseInt(d)] || d).join('');
-}
-
-function useBdTime() {
-  const [time, setTime] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Dhaka" }));
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setTime(new Date(now.toLocaleString("en-US", { timeZone: "Asia/Dhaka" })));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return time;
-}
-
 const emptySubscribe = () => () => {};
 
 export function Sidebar() {
@@ -127,20 +47,6 @@ export function Sidebar() {
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const bdTime = useBdTime();
-
-  const hours = bdTime.getHours();
-  const minutes = bdTime.getMinutes();
-  const seconds = bdTime.getSeconds();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const displayHours = hours % 12 || 12;
-
-  const dayName = BD_DAYS_EN[bdTime.getDay()];
-  const monthName = BD_MONTHS_EN[bdTime.getMonth()];
-  const dateNum = bdTime.getDate();
-  const year = bdTime.getFullYear();
-
-  const bengaliDate = getSimpleBengaliDate(bdTime);
 
   return (
     <>
@@ -204,39 +110,6 @@ export function Sidebar() {
                 Productivity Hub
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* ===== BD TIME WIDGET ===== */}
-        <div className="relative z-10 mx-3 mb-4">
-          <div className="rounded-xl dark:bg-white/[0.03] bg-primary/[0.04] border border-primary/[0.08] p-3">
-            {/* Live Clock */}
-            <div className="flex items-center gap-2 mb-2">
-              <Clock size={14} className="text-primary shrink-0" />
-              <span className="text-[11px] font-semibold text-primary tracking-wide">
-                🇧🇩 BANGLADESH TIME
-              </span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-foreground tabular-nums tracking-tight">
-                {String(displayHours).padStart(2, '0')}
-                <span className="text-primary animate-pulse">:</span>
-                {String(minutes).padStart(2, '0')}
-                <span className="text-primary animate-pulse">:</span>
-                {String(seconds).padStart(2, '0')}
-              </span>
-              <span className="text-xs font-semibold text-muted-foreground ml-1">
-                {ampm}
-              </span>
-            </div>
-            {/* English Date */}
-            <p className="text-[11px] text-muted-foreground mt-1 font-medium">
-              {dayName}, {monthName} {dateNum}, {year}
-            </p>
-            {/* Bengali Date */}
-            <p className="text-[11px] text-muted-foreground/60 mt-0.5 font-medium">
-              {toBengaliDigits(bengaliDate.bnDay)} {bengaliDate.bnMonthName} {toBengaliDigits(bengaliDate.bnYear)} · {bengaliDate.season}
-            </p>
           </div>
         </div>
 
