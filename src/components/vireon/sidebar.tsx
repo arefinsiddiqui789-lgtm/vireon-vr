@@ -14,7 +14,6 @@ import {
   Menu,
   X,
   CalendarDays,
-  ChevronRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,36 +24,17 @@ interface NavItem {
   id: ActiveSection;
   label: string;
   icon: React.ReactNode;
+  color: string; // tailwind color class for the icon bubble bg
 }
 
-interface NavGroup {
-  title: string;
-  items: NavItem[];
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    title: "General",
-    items: [
-      { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-      { id: "overview", label: "Overview", icon: <CalendarDays size={18} /> },
-    ],
-  },
-  {
-    title: "Productivity",
-    items: [
-      { id: "study", label: "Study Planner", icon: <BookOpen size={18} /> },
-      { id: "goals", label: "Daily Goals", icon: <Target size={18} /> },
-      { id: "gym", label: "Gym Routine", icon: <Dumbbell size={18} /> },
-    ],
-  },
-  {
-    title: "Tools",
-    items: [
-      { id: "compiler", label: "Code Compiler", icon: <Code2 size={18} /> },
-      { id: "helper", label: "Vireon Bro", icon: <Bot size={18} /> },
-    ],
-  },
+const NAV_ITEMS: NavItem[] = [
+  { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={17} />, color: "bg-blue-500/15 text-blue-400 dark:text-blue-400" },
+  { id: "study", label: "Study Planner", icon: <BookOpen size={17} />, color: "bg-emerald-500/15 text-emerald-400 dark:text-emerald-400" },
+  { id: "goals", label: "Daily Goals", icon: <Target size={17} />, color: "bg-teal-500/15 text-teal-400 dark:text-teal-400" },
+  { id: "gym", label: "Gym Routine", icon: <Dumbbell size={17} />, color: "bg-rose-500/15 text-rose-400 dark:text-rose-400" },
+  { id: "compiler", label: "Code Compiler", icon: <Code2 size={17} />, color: "bg-violet-500/15 text-violet-400 dark:text-violet-400" },
+  { id: "helper", label: "Vireon Bro", icon: <Bot size={17} />, color: "bg-amber-500/15 text-amber-400 dark:text-amber-400" },
+  { id: "overview", label: "Overview", icon: <CalendarDays size={17} />, color: "bg-cyan-500/15 text-cyan-400 dark:text-cyan-400" },
 ];
 
 const emptySubscribe = () => () => {};
@@ -93,125 +73,140 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-full w-[260px]",
+          "fixed top-0 left-0 z-40 h-full w-[250px]",
           "bg-sidebar border-r border-sidebar-border",
-          "flex flex-col py-5 px-3",
+          "flex flex-col",
           "transition-all duration-300 ease-in-out",
-          "dark:bg-gradient-to-b dark:from-[#060d1b] dark:via-[#081425] dark:to-[#0a1a30]",
+          "dark:bg-gradient-to-b dark:from-[#050b18] dark:via-[#071220] dark:to-[#091828]",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
           "md:translate-x-0 md:static md:z-auto"
         )}
       >
-        {/* Subtle glow at top */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none" />
+        {/* Ambient glow at top */}
+        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-primary/[0.04] to-transparent pointer-events-none" />
+        {/* Subtle corner glow */}
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-primary/[0.03] blur-3xl pointer-events-none" />
 
-        {/* Logo Section */}
-        <div className="flex items-center gap-3 px-3 mb-6 relative z-10">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden vireon-glow flex items-center justify-center bg-primary shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Vireon Logo"
-              width={32}
-              height={32}
-              className="object-contain"
-            />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent leading-tight">
-              Vireon
-            </h1>
-            <p className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
-              CSE Productivity Hub
-            </p>
+        {/* ===== LOGO AREA ===== */}
+        <div className="relative z-10 px-5 pt-6 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="relative w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 shadow-lg shadow-primary/20 shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Vireon Logo"
+                width={30}
+                height={30}
+                className="object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-[17px] font-bold text-foreground leading-tight">
+                Vireon
+              </h1>
+              <p className="text-[10px] text-muted-foreground font-medium tracking-wide">
+                Productivity Hub
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Navigation Groups */}
-        <nav className="flex-1 overflow-y-auto space-y-5 relative z-10 scrollbar-none">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.title}>
-              {/* Group Label */}
-              <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                {group.title}
-              </p>
+        {/* ===== NAVIGATION ===== */}
+        <nav className="flex-1 overflow-y-auto px-3 relative z-10">
+          <div className="space-y-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <motion.button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    setSidebarOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-xl text-left relative",
+                    "transition-all duration-200",
+                    isActive
+                      ? "py-2.5 px-3"
+                      : "py-2 px-3 hover:py-2.5"
+                  )}
+                  whileHover={{ x: 2 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  {/* Active background pill */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-bg"
+                      className="absolute inset-0 rounded-xl dark:bg-white/[0.06] bg-primary/[0.08] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] shadow-[inset_0_1px_0_rgba(59,109,250,0.1)]"
+                      transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                    />
+                  )}
 
-              {/* Group Items */}
-              <div className="space-y-0.5">
-                {group.items.map((item) => {
-                  const isActive = activeSection === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveSection(item.id);
-                        setSidebarOpen(false);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium",
-                        "transition-all duration-200 relative group",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
-                      )}
-                    >
-                      {/* Active indicator bar */}
-                      {isActive && (
-                        <motion.div
-                          layoutId="sidebar-active-indicator"
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary"
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
+                  {/* Icon bubble */}
+                  <div
+                    className={cn(
+                      "relative z-10 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200",
+                      isActive
+                        ? item.color
+                        : "bg-transparent text-sidebar-foreground/35 group-hover:text-sidebar-foreground/60"
+                    )}
+                  >
+                    {item.icon}
+                  </div>
 
-                      {/* Icon */}
-                      <span className={cn(
-                        "shrink-0 transition-colors duration-200",
-                        isActive ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
-                      )}>
-                        {item.icon}
-                      </span>
+                  {/* Label */}
+                  <span
+                    className={cn(
+                      "relative z-10 text-[13px] font-medium truncate transition-colors duration-200",
+                      isActive
+                        ? "text-foreground"
+                        : "text-sidebar-foreground/45 hover:text-sidebar-foreground/80"
+                    )}
+                  >
+                    {item.label}
+                  </span>
 
-                      {/* Label */}
-                      <span className="truncate">{item.label}</span>
-
-                      {/* Active chevron */}
-                      {isActive && (
-                        <ChevronRight size={14} className="ml-auto opacity-40 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+                  {/* Active dot */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-dot"
+                      className="relative z-10 ml-auto w-1.5 h-1.5 rounded-full bg-primary"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
         </nav>
 
-        {/* Bottom Section */}
-        <div className="mt-auto relative z-10">
-          {/* Divider */}
-          <div className="h-px bg-sidebar-border/60 mx-3 mb-3" />
-
-          {/* Theme toggle */}
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium",
-              "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
-              "transition-all duration-200"
-            )}
-          >
-            <span className="shrink-0 text-sidebar-foreground/40">
-              {mounted && theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </span>
-            <span>{mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-          </button>
-
-          {/* Version badge */}
-          <div className="px-3 mt-2">
-            <p className="text-[10px] text-muted-foreground/30 text-center">
-              v1.0.0
-            </p>
+        {/* ===== BOTTOM SECTION ===== */}
+        <div className="relative z-10 px-3 pb-5">
+          {/* Theme toggle card */}
+          <div className="rounded-xl dark:bg-white/[0.03] bg-muted/40 p-2">
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium",
+                "hover:bg-sidebar-accent/50 transition-all duration-200"
+              )}
+            >
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                "bg-amber-500/15 text-amber-400 dark:text-amber-400 dark:bg-amber-500/15",
+                mounted && theme !== "dark" && "bg-indigo-500/15 text-indigo-500"
+              )}>
+                {mounted && theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+              </div>
+              <span className="text-sidebar-foreground/60">
+                {mounted && theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </span>
+            </button>
           </div>
+
+          {/* Branding */}
+          <p className="text-[10px] text-muted-foreground/25 text-center mt-3 font-medium">
+            v1.0 · Built by Arefin
+          </p>
         </div>
       </aside>
     </>
