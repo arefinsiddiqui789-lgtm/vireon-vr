@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
     // --- FALLBACK TO REAL ZAI ---
     // --- TRY GEMINI SECOND ---
     const geminiKey = (process.env.GEMINI_API_KEY || "").trim();
+    let apiError = "";
     if (geminiKey && geminiKey !== "") {
-      console.log("Attempting Gemini connection...");
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
@@ -62,36 +62,31 @@ export async function POST(req: NextRequest) {
               parts: [{
                 text: `SYSTEM: You are "Vireon Bro", a friendly and helpful AI assistant specialized in CSE. personality: supportive, fun, bro-like. Creator: Arefin Siddiqui. \nUSER MESSAGE: ${message}`
               }]
-            }],
-            generationConfig: {
-              maxOutputTokens: 800,
-            }
+            }]
           })
         });
 
         if (!geminiResponse.ok) {
           const errData = await geminiResponse.json();
-          console.error("Gemini API Error Response:", JSON.stringify(errData));
+          apiError = errData.error?.message || "Unknown API Error";
         } else {
           const geminiData = await geminiResponse.json();
           const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
           
           if (responseText) {
-            console.log("Gemini response received successfully");
             return NextResponse.json({ response: responseText });
           }
+          apiError = "Empty response from Gemini";
         }
       } catch (e: any) {
-        console.error("Gemini Fetch Exception:", e.message);
+        apiError = e.message;
       }
-    } else {
-      console.warn("GEMINI_API_KEY is missing or empty");
     }
 
     // --- FALLBACK: SMART SIMULATED AI ---
     const lowerMessage = message.toLowerCase();
     let simulatedResponse = "";
-    let debugTag = geminiKey ? "[GEMINI_ATTEMPTED_BUT_FAILED]" : "[KEY_MISSING]";
+    let debugTag = geminiKey ? `[GEMINI_FAILED: ${apiError}]` : "[KEY_MISSING]";
 
     if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
       simulatedResponse = "Yo! What's up, bro? I'm Vireon Bro. " + debugTag;
