@@ -60,41 +60,45 @@ export async function POST(req: NextRequest) {
     // --- TRY GEMINI NEXT (THE REAL POWER) ---
     const geminiKey = (process.env.GEMINI_API_KEY || "AIzaSyAxMnEzO6ql7oYtUoa54Kbaeq8Y59smVCQ").trim();
     if (geminiKey) {
-      const models = ["gemini-1.5-flash", "gemini-2.0-flash"];
-      for (const model of models) {
-        try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
-          const geminiResponse = await fetch(geminiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `You are a high-speed code execution simulator. Execute this ${langName} code and return ONLY the exact output it would produce on a real system. No explanations, no markdown. If there is an error, prefix it with 'ERROR:'.\n\nCODE:\n${code}`
+      const versions = ["v1", "v1beta"];
+      const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-pro"];
+      
+      for (const ver of versions) {
+        for (const model of models) {
+          try {
+            const geminiUrl = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${geminiKey}`;
+            const geminiResponse = await fetch(geminiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{
+                    text: `You are a high-speed code execution simulator. Execute this ${langName} code and return ONLY the exact output it would produce on a real system. No explanations, no markdown. If there is an error, prefix it with 'ERROR:'.\n\nCODE:\n${code}`
+                  }]
                 }]
-              }]
-            })
-          });
-
-          if (geminiResponse.ok) {
-            const data = await geminiResponse.json();
-            let response = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            
-            // CLEANING: Strip out markdown code blocks if the AI included them
-            response = response.replace(/```[a-z]*\n/gi, "").replace(/```/g, "").trim();
-            
-            const hasError = response.toLowerCase().includes("error:");
-            const executionTime = Date.now() - startTime;
-
-            return NextResponse.json({
-              stdout: hasError ? "" : response,
-              stderr: hasError ? response : "",
-              exitCode: hasError ? 1 : 0,
-              executionTime,
+              })
             });
+
+            if (geminiResponse.ok) {
+              const data = await geminiResponse.json();
+              let response = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              
+              // CLEANING: Strip out markdown code blocks if the AI included them
+              response = response.replace(/```[a-z]*\n/gi, "").replace(/```/g, "").trim();
+              
+              const hasError = response.toLowerCase().includes("error:");
+              const executionTime = Date.now() - startTime;
+
+              return NextResponse.json({
+                stdout: hasError ? "" : response,
+                stderr: hasError ? response : "",
+                exitCode: hasError ? 1 : 0,
+                executionTime,
+              });
+            }
+          } catch (e: any) {
+            console.error(`Gemini ${ver}/${model} Error:`, e.message);
           }
-        } catch (e: any) {
-          console.error(`Gemini ${model} Execution Error:`, e.message);
         }
       }
     }
