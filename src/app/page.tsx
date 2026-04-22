@@ -16,13 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 
-const LOGIN_EVENT = "vireon:login-success";
-
-export function signalJustLoggedIn() {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent(LOGIN_EVENT));
-  }
-}
+import { LOGIN_EVENT } from "@/lib/events";
 
 export default function Home() {
   const { activeSection } = useVireonStore();
@@ -85,11 +79,6 @@ export default function Home() {
         </motion.div>
       </div>
     );
-  }
-
-  // ===== Not authenticated =====
-  if (status === "unauthenticated" || !session) {
-    return <AuthPage />;
   }
 
   // ===== Splash (post-login animation) =====
@@ -185,6 +174,11 @@ export default function Home() {
         </motion.div>
       </motion.div>
     );
+  }
+
+  // ===== Not authenticated =====
+  if (status === "unauthenticated" || !session) {
+    return <AuthPage />;
   }
 
   // ===== Main App =====

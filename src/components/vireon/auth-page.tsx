@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { signalJustLoggedIn } from "@/app/page";
+import { signalJustLoggedIn } from "@/lib/events";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -56,15 +56,15 @@ export function AuthPage() {
       const result = await signIn("credentials", {
         email: loginEmail,
         password: loginPassword,
-        redirect: false,
+        callbackUrl: "/",
       });
 
       if (result?.error) {
         toast.error(result.error);
-      } else {
-        signalJustLoggedIn();
-        toast.success("Welcome back!");
+        setIsLoading(false);
       }
+      // Note: With redirect: true (default), the page will reload automatically
+      // and trigger the authenticated state in Home.
     } catch {
       toast.error("Something went wrong");
     } finally {
