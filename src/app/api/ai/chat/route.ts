@@ -36,38 +36,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // --- TRY GEMINI 2.0 (DIRECT LINK) ---
+    // --- TRY GEMINI (MULTI-MODEL FALLBACK) ---
     const geminiKey = (process.env.GEMINI_API_KEY || "AIzaSyAxMnEzO6ql7oYtUoa54Kbaeq8Y59smVCQ").trim();
+    let lastError = "";
     if (geminiKey) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
-        const response = await fetch(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are "Vireon Bro", a friendly and helpful AI assistant specialized in CSE. personality: supportive, fun, bro-like. Creator: Arefin Siddiqui. \n\nUser Question: ${message}`
-              }]
-            }]
-          })
-        });
+      const models = ["gemini-1.5-flash", "gemini-2.0-flash"];
+      for (const model of models) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `You are Vireon Bro, a CSE assistant. Creator: Arefin Siddiqui. \n\nQuestion: ${message}` }] }]
+            })
+          });
 
-        if (response.ok) {
-          const data = await response.json();
-          const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (responseText) {
-            return NextResponse.json({ response: responseText });
+          if (response.ok) {
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) return NextResponse.json({ response: text });
+          } else {
+            const err = await response.json();
+            lastError = err.error?.message || response.statusText;
           }
+        } catch (e: any) {
+          lastError = e.message;
         }
-      } catch (e) {
-        console.error("Gemini Error:", e);
       }
     }
 
     // --- LAST RESORT: FALLBACK ---
     return NextResponse.json({ 
-      response: "Yo! I hear you, but my brain is a bit foggy right now. Try again in 10 seconds, bro! 🚀" 
+      response: `Yo! My brain is foggy. Error: ${lastError.substring(0, 50)}. Try again, bro! 🚀` 
     });
   } catch (error) {
     console.error("Global Error:", error);
