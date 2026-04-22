@@ -48,8 +48,9 @@ export async function POST(req: NextRequest) {
 
     // --- FALLBACK TO REAL ZAI ---
     // --- TRY GEMINI SECOND ---
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (!openai && geminiKey) {
+    const geminiKey = (process.env.GEMINI_API_KEY || "").trim();
+    if (geminiKey && geminiKey !== "") {
+      console.log("Attempting Gemini connection...");
       try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
@@ -57,22 +58,34 @@ export async function POST(req: NextRequest) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{
+              role: "user",
               parts: [{
-                text: `You are "Vireon Bro", a friendly and helpful AI assistant specialized in CSE. personality: supportive, fun, bro-like. Creator: Arefin Siddiqui. \nUser Input: ${message}`
+                text: `SYSTEM: You are "Vireon Bro", a friendly and helpful AI assistant specialized in CSE. personality: supportive, fun, bro-like. Creator: Arefin Siddiqui. \nUSER MESSAGE: ${message}`
               }]
-            }]
+            }],
+            generationConfig: {
+              maxOutputTokens: 800,
+            }
           })
         });
 
-        const geminiData = await geminiResponse.json();
-        const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (responseText) {
-          return NextResponse.json({ response: responseText });
+        if (!geminiResponse.ok) {
+          const errData = await geminiResponse.json();
+          console.error("Gemini API Error Response:", JSON.stringify(errData));
+        } else {
+          const geminiData = await geminiResponse.json();
+          const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (responseText) {
+            console.log("Gemini response received successfully");
+            return NextResponse.json({ response: responseText });
+          }
         }
       } catch (e: any) {
-        console.error("Gemini Execution Error:", e.message);
+        console.error("Gemini Fetch Exception:", e.message);
       }
+    } else {
+      console.warn("GEMINI_API_KEY is missing or empty in environment variables");
     }
 
     // --- FALLBACK: SMART SIMULATED AI ---
