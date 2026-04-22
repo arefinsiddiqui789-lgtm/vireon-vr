@@ -47,7 +47,35 @@ export async function POST(req: NextRequest) {
     }
 
     // --- FALLBACK TO REAL ZAI ---
-    // --- FALLBACK: SMART SIMULATED AI (NO KEY NEEDED) ---
+    // --- TRY GEMINI SECOND ---
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!openai && geminiKey) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+        const geminiResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `You are "Vireon Bro", a friendly and helpful AI assistant specialized in CSE. personality: supportive, fun, bro-like. Creator: Arefin Siddiqui. \nUser Input: ${message}`
+              }]
+            }]
+          })
+        });
+
+        const geminiData = await geminiResponse.json();
+        const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (responseText) {
+          return NextResponse.json({ response: responseText });
+        }
+      } catch (e: any) {
+        console.error("Gemini Execution Error:", e.message);
+      }
+    }
+
+    // --- FALLBACK: SMART SIMULATED AI ---
     console.warn("AI Service using Smart Simulation");
     
     const lowerMessage = message.toLowerCase();
