@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const geminiKey = (process.env.GEMINI_API_KEY || "AIzaSyCdaFMa86BiIhXkdZAhq6qllbXz_1ZwDNs").trim();
     if (geminiKey && geminiKey !== "") {
       try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
