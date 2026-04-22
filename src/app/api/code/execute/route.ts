@@ -78,13 +78,17 @@ export async function POST(req: NextRequest) {
 
           if (geminiResponse.ok) {
             const data = await geminiResponse.json();
-            const response = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            let response = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            
+            // CLEANING: Strip out markdown code blocks if the AI included them
+            response = response.replace(/```[a-z]*\n/gi, "").replace(/```/g, "").trim();
+            
             const hasError = response.toLowerCase().includes("error:");
             const executionTime = Date.now() - startTime;
 
             return NextResponse.json({
-              stdout: hasError ? "" : response.trim(),
-              stderr: hasError ? response.trim() : "",
+              stdout: hasError ? "" : response,
+              stderr: hasError ? response : "",
               exitCode: hasError ? 1 : 0,
               executionTime,
             });
