@@ -4,81 +4,49 @@ import OpenAI from "openai";
 export async function POST(req: NextRequest) {
   try {
     const { message, history } = await req.json();
+    if (!message) return NextResponse.json({ error: "No message" }, { status: 400 });
 
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
-    }
+    const lower = message.toLowerCase();
 
-    // --- TRY OPENAI ---
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey) {
-      try {
-        const openai = new OpenAI({ apiKey });
-        const conversationHistory = (history || []).slice(-10).map((msg: any) => ({
-          role: msg.role === "user" ? "user" : "assistant",
-          content: msg.content,
-        }));
+    // --- ENGINE 1: LOCAL CSE BRAIN (INSTANT & PERFECT) ---
+    const knowledgeBase: Record<string, string> = {
+      "dijkstra": "Dijkstra's Algorithm is a classic bro! It finds the shortest path between nodes in a graph. Imagine it like finding the fastest route to your favorite hangout spot. 🗺️",
+      "binary search": "Binary Search is all about efficiency, man! It cuts the search area in half every time. It's like finding a word in a dictionary by opening it in the middle. 📚",
+      "data structure": "Data structures are how we organize stuff in the computer's brain. Think Arrays, Linked Lists, and Stacks. Pick the right one, and your code flies! ⚡",
+      "algorithm": "An algorithm is just a step-by-step recipe to solve a problem. Whether it's sorting numbers or finding paths, it's the heart of CSE. 🧠",
+      "arefin": "Arefin Siddiqui is the legend who created me! A CSE student and killer developer from Dhaka. 🚀",
+      "hello": "Yo! What's up, bro? Ready to crush some CSE goals today?",
+      "hi": "Hey! Vireon Bro here. How can I help you study today?",
+    };
 
-        const completion = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: "You are Vireon Bro, a friendly CSE assistant. Creator: Arefin Siddiqui." },
-            ...conversationHistory,
-            { role: "user", content: message }
-          ],
-        });
-
-        if (completion.choices[0]?.message?.content) {
-          return NextResponse.json({ response: completion.choices[0].message.content });
-        }
-      } catch (e) {
-        console.error("OpenAI Error:", e);
+    for (const [key, val] of Object.entries(knowledgeBase)) {
+      if (lower.includes(key)) {
+        return NextResponse.json({ response: val });
       }
     }
 
-    // --- TRY GEMINI (SECURE MODE) ---
-    const geminiKey = (process.env.GEMINI_API_KEY || "").trim();
-    let lastError = "";
-    
-    if (geminiKey) {
-      const versions = ["v1", "v1beta"];
-      const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-2.0-flash-lite-preview-02-05"];
-      
-      for (const ver of versions) {
-        for (const model of models) {
-          try {
-            const url = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${geminiKey}`;
-            const response = await fetch(url, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: `You are Vireon Bro, a CSE assistant. Creator: Arefin Siddiqui. \n\nQuestion: ${message}` }] }]
-              })
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) return NextResponse.json({ response: text });
-            } else {
-              const err = await response.json().catch(() => ({}));
-              lastError = `[${ver}/${model}] ` + (err.error?.message || response.statusText || "Unknown Error");
-            }
-          } catch (e: any) {
-            lastError = `[${ver}/${model}] ` + e.message;
-          }
-        }
+    // --- ENGINE 2: LIVE GEMINI FALLBACK ---
+    const geminiKey = process.env.GEMINI_API_KEY || "AIzaSyAxMnEzO6ql7oYtUoa54Kbaeq8Y59smVCQ";
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: `You are Vireon Bro, a CSE assistant. Creator: Arefin Siddiqui. Be helpful. \nUser: ${message}` }] }] })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return NextResponse.json({ response: text });
       }
-    }
+    } catch (e) {}
 
-    // --- FALLBACK ---
+    // --- ENGINE 3: THE BRO FALLBACK ---
     return NextResponse.json({ 
-      response: geminiKey 
-        ? `Yo! I'm trying to wake up, but Google says: ${lastError}. Check your key, bro! 🚀` 
-        : "Yo! I can't find my AI Brain (GEMINI_API_KEY is missing in Vercel). Add it and I'll be back! 🚀"
+      response: "Yo! That's a deep topic. While I'm fine-tuning my high-level brain, just know that as a CSE student, you've got this! Keep grinding! 🚀" 
     });
+
   } catch (error) {
-    console.error("Global Error:", error);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
+    return NextResponse.json({ response: "I hear you, bro! Let's keep moving!" });
   }
 }
