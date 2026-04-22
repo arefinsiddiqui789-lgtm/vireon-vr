@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Initialize OpenAI inside the request to ensure fresh env variables
+    // Initialize OpenAI
     const apiKey = process.env.OPENAI_API_KEY;
     const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
@@ -46,13 +46,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // --- FALLBACK TO REAL ZAI ---
-    // --- TRY GEMINI SECOND ---
-    const geminiKey = (process.env.GEMINI_API_KEY || "").trim();
-    let apiError = "";
+    // --- TRY GEMINI SECOND (FALLBACK TO HARDCODED KEY) ---
+    const geminiKey = (process.env.GEMINI_API_KEY || "AIzaSyCdaFMa86BiIhXkdZAhq6qllbXz_1ZwDNs").trim();
     if (geminiKey && geminiKey !== "") {
       try {
-        // Switching to v1 stable API and using the correct model path
         const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
         const geminiResponse = await fetch(geminiUrl, {
           method: "POST",
@@ -67,27 +64,21 @@ export async function POST(req: NextRequest) {
           })
         });
 
-        if (!geminiResponse.ok) {
-          const errData = await geminiResponse.json();
-          apiError = errData.error?.message || "Unknown API Error";
-        } else {
+        if (geminiResponse.ok) {
           const geminiData = await geminiResponse.json();
           const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-          
           if (responseText) {
             return NextResponse.json({ response: responseText });
           }
-          apiError = "Empty response from Gemini";
         }
       } catch (e: any) {
-        apiError = e.message;
+        console.error("Gemini Error:", e.message);
       }
     }
 
     // --- FALLBACK: SMART SIMULATED AI ---
     const lowerMessage = message.toLowerCase();
     let simulatedResponse = "";
-
     if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
       simulatedResponse = "Yo! What's up, bro? I'm Vireon Bro. How can I help you crush your goals today?";
     } else {
