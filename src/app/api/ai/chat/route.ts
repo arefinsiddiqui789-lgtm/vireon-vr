@@ -87,12 +87,11 @@ export async function POST(req: NextRequest) {
     // --- FALLBACK: SMART SIMULATED AI ---
     const lowerMessage = message.toLowerCase();
     let simulatedResponse = "";
-    let debugTag = geminiKey ? `[GEMINI_FAILED: ${apiError}]` : "[KEY_MISSING]";
 
     if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      simulatedResponse = "Yo! What's up, bro? I'm Vireon Bro. " + debugTag;
+      simulatedResponse = "Yo! What's up, bro? I'm Vireon Bro. How can I help you crush your goals today?";
     } else {
-      simulatedResponse = "I hear you, bro! I'm currently in 'Offline Mode' because I can't find my AI brain. \n\nDEBUG INFO: " + debugTag;
+      simulatedResponse = "I hear you, bro! I'm currently running in limited mode, but I'm here to push you forward. Keep focusing on your CSE goals—you've got this! 🚀";
     }
 
     return NextResponse.json({ response: simulatedResponse });
