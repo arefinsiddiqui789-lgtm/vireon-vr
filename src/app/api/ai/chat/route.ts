@@ -85,25 +85,18 @@ export async function POST(req: NextRequest) {
         console.error("Gemini Fetch Exception:", e.message);
       }
     } else {
-      console.warn("GEMINI_API_KEY is missing or empty in environment variables");
+      console.warn("GEMINI_API_KEY is missing or empty");
     }
 
     // --- FALLBACK: SMART SIMULATED AI ---
-    console.warn("AI Service using Smart Simulation");
-    
     const lowerMessage = message.toLowerCase();
     let simulatedResponse = "";
+    let debugTag = geminiKey ? "[GEMINI_ATTEMPTED_BUT_FAILED]" : "[KEY_MISSING]";
 
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
-      simulatedResponse = "Yo! What's up, bro? I'm Vireon Bro, your CSE command center assistant. Ready to crush some code or study today? 🚀";
-    } else if (lowerMessage.includes("who are you") || lowerMessage.includes("who made you")) {
-      simulatedResponse = "I'm Vireon Bro, created by the legend Arefin Siddiqui! He's a CSE student at IUB and a killer web developer. He built me to help you stay productive. 💻";
-    } else if (lowerMessage.includes("code") || lowerMessage.includes("programming")) {
-      simulatedResponse = "Coding is the soul of CSE, man! Whether it's Python, C++, or Java, just keep grinding. Remember: 'First, solve the problem. Then, write the code.' Need help with a specific concept? ⚡";
-    } else if (lowerMessage.includes("data structure") || lowerMessage.includes("algorithm")) {
-      simulatedResponse = "Algorithms are like recipes for success! Whether it's a Binary Search or a Quick Sort, it's all about efficiency. What concept are you tackling right now? 🧠";
+    if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
+      simulatedResponse = "Yo! What's up, bro? I'm Vireon Bro. " + debugTag;
     } else {
-      simulatedResponse = "I hear you, bro! That's a solid topic. While my 'Deep Thinking' core is waiting for an API key, I'm here to push you forward. Keep focusing on your CSE goals—you've got this! 🚀";
+      simulatedResponse = "I hear you, bro! I'm currently in 'Offline Mode' because I can't find my AI brain. \n\nDEBUG INFO: " + debugTag;
     }
 
     return NextResponse.json({ response: simulatedResponse });
